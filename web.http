@@ -1,0 +1,17 @@
+
+### 테스트
+GET www.google.co.kr
+
+
+### png
+GET https://raw.communitydragon.org/latest/game/assets/characters/aatrox/skins/base/aatrox_base_tx_cm.png
+
+
+### skn
+https://raw.communitydragon.org/latest/game/assets/characters/ahri/skins/base/ahri_base.skn
+
+
+### obj
+https://raw.communitydragon.org/latest/game/assets/characters/ahri/skins/base/ahri_base/Body.obj
+
+

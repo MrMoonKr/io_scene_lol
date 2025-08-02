@@ -26,7 +26,7 @@ class sknHeader():
     def __init__(self):
         # UserDict.__init__(self)
         self.__format__ = '<i2h'
-        self.__size__ = struct.calcsize(self.__format__)
+        self.__size__   = struct.calcsize( self.__format__ )
         self.magic = 0
         self.version = 0
         self.numObjects = 0
@@ -113,6 +113,7 @@ class sknMaterial():
 
 
 class sknMetaData():
+    
     def __init__(self, part1=0, numIndices=None, numVertices=None, vertexBlockSize=52, containsVertexColor=0, boundingBoxMin=None, boundingBoxMax=None, boundingSpherePos=None, boundingSphereRadius=None):
         # # UserDict.__init__(self)
         self.__format__v12 = '<2i'
@@ -241,35 +242,35 @@ class scoObject():
         self.materialDict = {}
 
 
-def importSKN(filepath):
-    sknFid = open(filepath, 'rb')
-    print("Reading SKN: %s" % filepath)
+def importSKN( filepath ):
+    sknFid = open( filepath, 'rb' )
+    print( "Reading SKN: %s" % filepath )
     #filepath = path.split(file)[-1]
     #print(filepath)
     header = sknHeader()
-    header.fromFile(sknFid)
+    header.fromFile( sknFid )
 
     materials = []
     
-    for k in range(header.numMaterials):
-        materials.append(sknMaterial())
-        materials[-1].fromFile(sknFid, header.version)
+    for k in range( header.numMaterials ):
+        materials.append( sknMaterial() )
+        materials[-1].fromFile( sknFid, header.version )
 
     metaData = sknMetaData()
-    metaData.fromFile(sknFid, header.version)
-    if (header.version == 0):
-        metaData.numIndices = materials[0].numIndices
+    metaData.fromFile( sknFid, header.version )
+    if ( header.version == 0 ):
+        metaData.numIndices  = materials[0].numIndices
         metaData.numVertices = materials[0].numVertices
 
     indices = []
     vertices = []
-    for k in range(metaData.numIndices):
-        buf = sknFid.read(struct.calcsize('<h'))
-        indices.append(struct.unpack('<h', buf)[0])
+    for k in range( metaData.numIndices ):
+        buf = sknFid.read( struct.calcsize('<h') )
+        indices.append( struct.unpack('<h', buf)[0] )
 
-    for k in range(metaData.numVertices):
-        vertices.append(sknVertex())
-        vertices[-1].fromFile(sknFid, metaData.containsVertexColor)
+    for k in range( metaData.numVertices ):
+        vertices.append( sknVertex() )
+        vertices[-1].fromFile( sknFid, metaData.containsVertexColor )
 
     # exclusive to version two+.
     if header.version >= 2:  # stuck in header b/c nowhere else for it
@@ -299,7 +300,7 @@ def skn2obj(header, materials, indices, vertices):
 
     return objStr
 
-def buildMesh(filepath,header, materials, metaData, indices, vertices):
+def buildMesh( filepath, header, materials, metaData, indices, vertices ):
     import bpy
     from os import path
     #(header, materials, metaData, indices, vertices) = importSKN(filepath)
@@ -922,15 +923,16 @@ def exportSCO(meshObj, output_filepath):
     scoFid.write('[ObjectEnd]\n\n')
 
 if __name__ == '__main__':
-    (header, materials, numIndices, 
-            numVertices, indices, vertices) = importSKN(testFile)
+    ( header, materials, 
+            numIndices, numVertices, 
+            indices, vertices ) = importSKN( testFile )
 
-    print(header)
-    print(materials)
-    print(numIndices)
-    print(numVertices)
-    print(indices[0])
-    print(vertices[0])
+    print( header)
+    print( materials )
+    print( numIndices )
+    print( numVertices )
+    print( indices[0] )
+    print( vertices[0] )
 
     #print('Checking bone indices')
     #i = 0

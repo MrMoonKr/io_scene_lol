@@ -69,40 +69,43 @@ class MaterialTextures(bpy.types.PropertyGroup):
         'mat_%d' % i: bpy.props.StringProperty(name="Material_%d" % i, subtype='FILE_NAME',default='' , options={'TEXTEDIT_UPDATE'}) for i in range(30)
         }
 
-class IMPORT_OT_lol(bpy.types.Operator, ImportHelper):
-    bl_label="Import LoL"
-    bl_idname="import.lol"
+class IMPORT_OT_lol( bpy.types.Operator, ImportHelper ):
+    '''
+        Import a League of Legends Character
+    '''
+    bl_label            = "Import LoL"
+    bl_idname           = "import.lol"
 
-    SKN_FILE = props.StringProperty(name='Mesh', description='Model .skn file', default='')
-    SKL_FILE = props.StringProperty(name='Skeleton', description='Model .skl file', default='')
-    # DDS_FILE = props.StringProperty(name='Texture', description='Model .dds file')    
-    MODEL_DIR = props.StringProperty()
-    IMPORT_TEXTURES = props.BoolProperty(name='ImportTextures', description='Loads the textures for the applied mesh', default=True)
-    CLEAR_SCENE = props.BoolProperty(name='ClearScene', description='Clear current scene before importing?', default=True)
-    APPLY_WEIGHTS = props.BoolProperty(name='LoadWeights', description='Load default bone weights from .skn file', default=True)
+    SKN_FILE            = props.StringProperty(name='Mesh', description='Model .skn file', default='')
+    SKL_FILE            = props.StringProperty(name='Skeleton', description='Model .skl file', default='')
+    # DDS_FILE            = props.StringProperty(name='Texture', description='Model .dds file')    
+    MODEL_DIR           = props.StringProperty()
+    IMPORT_TEXTURES     = props.BoolProperty(name='ImportTextures', description='Loads the textures for the applied mesh', default=True)
+    CLEAR_SCENE         = props.BoolProperty(name='ClearScene', description='Clear current scene before importing?', default=True)
+    APPLY_WEIGHTS       = props.BoolProperty(name='LoadWeights', description='Load default bone weights from .skn file', default=True)
 
-    MATERIAL_LIST= []
-    TEXTURE_LIST= []
-    TEXTURE_PROPERTIES = props.PointerProperty(name='Materials', type=MaterialTextures)
+    MATERIAL_LIST       = []
+    TEXTURE_LIST        = []
+    TEXTURE_PROPERTIES  = props.PointerProperty(name='Materials', type=MaterialTextures)
     
 
-    files= props.CollectionProperty(name="File Path",type=bpy.types.OperatorFileListElement)
+    files               = props.CollectionProperty(name="File Path",type=bpy.types.OperatorFileListElement)
 
-    def draw(self, context):
-        layout = self.layout
+    def draw( self, context ):
+        layout          = self.layout
 
-        box = layout.box()
+        box             = layout.box()
 
-        imageBox = layout.box()
-        imageBox.label(text="Material Textures")
+        imageBox        = layout.box()
+        imageBox.label( text="Material Textures" )
 
         if(self.IMPORT_TEXTURES):
             imageBox.enabled = True
         else:
             imageBox.enabled = False
        
-        fileProps = context.space_data.params
-        self.MODEL_DIR = (fileProps.directory).decode('utf-8')
+        fileProps       = context.space_data.params
+        self.MODEL_DIR  = (fileProps.directory).decode('utf-8')
 
         for file in self.files:
             selectedFileExt=path.splitext(file.name)[-1].lower()
@@ -123,57 +126,62 @@ class IMPORT_OT_lol(bpy.types.Operator, ImportHelper):
                 k = 'mat_{}'.format(i)
                 imageBox.prop(self.TEXTURE_PROPERTIES, k, text=self.MATERIAL_LIST[i], icon='SHADING_TEXTURE')        
 
-        box.prop(self.properties, 'SKN_FILE')
-        box.prop(self.properties, 'SKL_FILE')
-        box.prop(self.properties, 'IMPORT_TEXTURES')
+        box.prop( self.properties, 'SKN_FILE' )
+        box.prop( self.properties, 'SKL_FILE' )
+        box.prop( self.properties, 'IMPORT_TEXTURES' )
         # box.prop(self.properties, 'DDS_FILE')
-        box.prop(self.properties, 'CLEAR_SCENE', text='Clear scene before importing')
-        box.prop(self.properties, 'APPLY_WEIGHTS', text='Load mesh weights')    
+        box.prop( self.properties, 'CLEAR_SCENE', text='Clear scene before importing' )
+        box.prop( self.properties, 'APPLY_WEIGHTS', text='Load mesh weights' )
         
-    def execute(self, context):
+    def execute( self, context ):
 
-        if(self.IMPORT_TEXTURES) and self.MATERIAL_LIST:
+        if ( self.IMPORT_TEXTURES ) and self.MATERIAL_LIST:
             self.TEXTURE_LIST = []
-            for i in range(len(self.MATERIAL_LIST)):
+            for i in range( len( self.MATERIAL_LIST ) ):
                 k = 'mat_%d' % i
-                self.TEXTURE_LIST.append(self.TEXTURE_PROPERTIES.get(k))
+                self.TEXTURE_LIST.append( self.TEXTURE_PROPERTIES.get( k ) )
 
-        import_char(MODEL_DIR=self.MODEL_DIR,
-                    SKN_FILE=self.SKN_FILE,
-                    SKL_FILE=self.SKL_FILE,
-                    # DDS_FILE=self.DDS_FILE,
-                    CLEAR_SCENE=self.CLEAR_SCENE,
-                    APPLY_WEIGHTS=self.APPLY_WEIGHTS,
-                    IMPORT_TEXTURES=self.IMPORT_TEXTURES,
-                    TEXTURE_LIST=self.TEXTURE_LIST)
+        import_char( MODEL_DIR=self.MODEL_DIR,
+                     SKN_FILE=self.SKN_FILE,
+                     SKL_FILE=self.SKL_FILE,
+                     # DDS_FILE=self.DDS_FILE,
+                     CLEAR_SCENE=self.CLEAR_SCENE,
+                     APPLY_WEIGHTS=self.APPLY_WEIGHTS,
+                     IMPORT_TEXTURES=self.IMPORT_TEXTURES,
+                     TEXTURE_LIST=self.TEXTURE_LIST )
                
         return {'FINISHED'}
 
-class IMPORT_OT_lolanm(bpy.types.Operator, ImportHelper):
-    bl_label="Import LoL Animation"
-    bl_idname="import.lolanm"
+class IMPORT_OT_lolanm( bpy.types.Operator, ImportHelper ):
+    '''
+        Import a League of Legends Animation
+    '''
+    bl_label            = "Import LoL Animation"
+    bl_idname           = "import.lolanm"
 
-    ANM_FILE = props.StringProperty(name='Animation', description='Animation .anm file')
-    MODEL_DIR = props.StringProperty()
+    ANM_FILE            = props.StringProperty(name='Animation', description='Animation .anm file')
+    MODEL_DIR           = props.StringProperty()
        
-    def draw(self, context):
-        layout = self.layout
-        fileProps = context.space_data.params
-        self.MODEL_DIR = (fileProps.directory).decode('utf-8')
+    def draw( self, context ):
+        layout          = self.layout
+        fileProps       = context.space_data.params
+        self.MODEL_DIR  = (fileProps.directory).decode('utf-8')
         
         selectedFileExt = path.splitext(fileProps.filename)[-1].lower()
         if selectedFileExt == '.anm':
             self.ANM_FILE = fileProps.filename
         box = layout.box()
-        box.prop(self.properties, 'ANM_FILE')
+        box.prop( self.properties, 'ANM_FILE' )
         
-    def execute(self, context):
-        import_animation(MODEL_DIR=self.MODEL_DIR,
-                    ANM_FILE=self.ANM_FILE)
+    def execute( self, context ):
+        import_animation( 
+                MODEL_DIR = self.MODEL_DIR,
+                ANM_FILE  = self.ANM_FILE
+                )
                
         return {'FINISHED'}
 
-class EXPORT_OT_lolanm(bpy.types.Operator, ImportHelper):
+class EXPORT_OT_lolanm( bpy.types.Operator, ExportHelper ):
     bl_label="Export LoL Animation"
     bl_idname="export.lolanm"
     
@@ -298,48 +306,50 @@ class EXPORT_OT_sco(bpy.types.Operator, ExportHelper): #BilbozZ Class
         
         return result
 
-def import_char(MODEL_DIR="", 
-                SKN_FILE="", 
-                SKL_FILE="", 
-                # DDS_FILE="",
-                TEXTURE_LIST=[],
 
-                CLEAR_SCENE=True, 
-                APPLY_WEIGHTS=True, 
-                APPLY_TEXTURE=True, 
-                IMPORT_TEXTURES=True):
-    '''Import a LoL Character
-    MODEL_DIR:  Base directory of the model you wish to import.
-    SKN_FILE:  .skn mesh file for the character
-    SKL_FILE:  .skl skeleton file for the character
-    DDS_FILE:  .dds texture file for the character
-    CLEAR_SCENE: remove existing meshes, armatures, surfaces, etc.
-                 before importing
-    APPLY_WEIGHTS:  Import bone weights from the mesh file
-    APPLY_TEXTURE:  Apply the skin texture
+def import_char( MODEL_DIR="", 
+                 SKN_FILE="", 
+                 SKL_FILE="", 
+                 # DDS_FILE="",
+                 TEXTURE_LIST=[],
 
-    !!IMPORTANT!!:
-    If you're running this on a windows system make sure
-    to escape the backslashes in the model directory you give.
+                 CLEAR_SCENE=True, 
+                 APPLY_WEIGHTS=True, 
+                 APPLY_TEXTURE=True, 
+                 IMPORT_TEXTURES=True ):
+    '''
+        Import a LoL Character
+        MODEL_DIR:  Base directory of the model you wish to import.
+        SKN_FILE:  .skn mesh file for the character
+        SKL_FILE:  .skl skeleton file for the character
+        DDS_FILE:  .dds texture file for the character
+        CLEAR_SCENE: remove existing meshes, armatures, surfaces, etc.
+                    before importing
+        APPLY_WEIGHTS:  Import bone weights from the mesh file
+        APPLY_TEXTURE:  Apply the skin texture
 
-    BAD:  c:\\path\\to\\model
-    GOOD: c:\\\\path\\\\to\\\\model
+        !!IMPORTANT!!:
+        If you're running this on a windows system make sure
+        to escape the backslashes in the model directory you give.
+
+        BAD:  c:\\path\\to\\model
+        GOOD: c:\\\\path\\\\to\\\\model
     '''
 
     if CLEAR_SCENE:
         for type in ['MESH', 'ARMATURE', 'LATTICE', 'CURVE', 'SURFACE']:
-            bpy.ops.object.select_by_type(extend=False, type=type)
+            bpy.ops.object.select_by_type( extend=False, type=type )
             bpy.ops.object.delete()
 
     if SKN_FILE:
-        SKN_FILEPATH=path.join(MODEL_DIR, SKN_FILE)
-        sknHeader, materials, metaData, indices, vertices = lolMesh.importSKN(SKN_FILEPATH)
-        lolMesh.buildMesh(SKN_FILEPATH,sknHeader, materials, metaData, indices, vertices)
+        SKN_FILEPATH = path.join( MODEL_DIR, SKN_FILE )
+        sknHeader, materials, metaData, indices, vertices = lolMesh.importSKN( SKN_FILEPATH )
+        lolMesh.buildMesh( SKN_FILEPATH, sknHeader, materials, metaData, indices, vertices )
         meshObj = bpy.data.objects['lolMesh']
-        bpy.ops.object.select_all(action='DESELECT')
-        meshObj.select_set(True)
-        bpy.ops.transform.resize(value=(1,1,-1), constraint_axis=(False, False,True), orient_type='GLOBAL')
-        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        bpy.ops.object.select_all( action='DESELECT' )
+        meshObj.select_set( True )
+        bpy.ops.transform.resize( value=(1,1,-1), constraint_axis=(False, False,True), orient_type='GLOBAL' )
+        bpy.ops.object.transform_apply( location=False, rotation=False, scale=True )
         bpy.ops.object.shade_smooth()
 
         #meshObj.name = 'lolMesh'
@@ -521,16 +531,16 @@ def export_sco(filepath):
     
     return {'FINISHED'}
 
-def menu_func_import(self, context):
-    self.layout.operator(IMPORT_OT_lol.bl_idname, text='League of Legends Character (.skn;.skl)', icon_value = custom_icons["lol"].icon_id)
-    self.layout.operator(IMPORT_OT_lolanm.bl_idname, text='League of Legends Animation(.anm)', icon_value = custom_icons["lol"].icon_id)
-    self.layout.operator(IMPORT_OT_sco.bl_idname, text='League of Legends Particle (.sco)', icon_value = custom_icons["lol"].icon_id)
+def menu_func_import( self, context ):
+    self.layout.operator( IMPORT_OT_lol.bl_idname, text='League of Legends Character (.skn;.skl)', icon_value = custom_icons["lol"].icon_id )
+    self.layout.operator( IMPORT_OT_lolanm.bl_idname, text='League of Legends Animation(.anm)', icon_value = custom_icons["lol"].icon_id )
+    self.layout.operator( IMPORT_OT_sco.bl_idname, text='League of Legends Particle (.sco)', icon_value = custom_icons["lol"].icon_id )
 
-def menu_func_export(self, context):
-    self.layout.operator(EXPORT_OT_lol.bl_idname, text="League of Legends (.skn)", icon_value = custom_icons["lol"].icon_id)
-    self.layout.operator(EXPORT_OT_skl.bl_idname, text="League of Legends Skeleton (.skl)", icon_value = custom_icons["lol"].icon_id)
-    self.layout.operator(EXPORT_OT_lolanm.bl_idname, text="League of Legends Animation(.anm)", icon_value = custom_icons["lol"].icon_id)
-    self.layout.operator(EXPORT_OT_sco.bl_idname, text="League of Legends Particle (.sco)", icon_value = custom_icons["lol"].icon_id)
+def menu_func_export( self, context ):
+    self.layout.operator( EXPORT_OT_lol.bl_idname, text="League of Legends (.skn)", icon_value = custom_icons["lol"].icon_id )
+    self.layout.operator( EXPORT_OT_skl.bl_idname, text="League of Legends Skeleton (.skl)", icon_value = custom_icons["lol"].icon_id )
+    self.layout.operator( EXPORT_OT_lolanm.bl_idname, text="League of Legends Animation(.anm)", icon_value = custom_icons["lol"].icon_id )
+    self.layout.operator( EXPORT_OT_sco.bl_idname, text="League of Legends Particle (.sco)", icon_value = custom_icons["lol"].icon_id )
 
 # Global icons to store icons
 custom_icons = None
@@ -539,42 +549,41 @@ def register():
     # Register Custom Icons
     global custom_icons
     custom_icons = bpy.utils.previews.new()
-    icons_dir = os.path.join(os.path.dirname(__file__), "icons")
-    custom_icons.load("lol_import", os.path.join(icons_dir, "import.png"), 'IMAGE')
-    custom_icons.load("lol_export", os.path.join(icons_dir, "export.png"), 'IMAGE')
-    custom_icons.load("lol", os.path.join(icons_dir, "icon.png"), 'IMAGE')
+    icons_dir    = os.path.join( os.path.dirname(__file__), "icons" )
+    custom_icons.load( "lol_import", os.path.join( icons_dir, "import.png" ), 'IMAGE' )
+    custom_icons.load( "lol_export", os.path.join( icons_dir, "export.png" ), 'IMAGE' )
+    custom_icons.load( "lol",        os.path.join( icons_dir, "icon.png"   ), 'IMAGE' )
 
-    bpy.utils.register_class(MaterialTextures)
+    bpy.utils.register_class( MaterialTextures )
 
-    bpy.utils.register_class(IMPORT_OT_lol)
-    bpy.utils.register_class(IMPORT_OT_lolanm)
-    bpy.utils.register_class(IMPORT_OT_sco)
-    bpy.types.TOPBAR_MT_file_import.append(menu_func_import)
+    bpy.utils.register_class( IMPORT_OT_lol )
+    bpy.utils.register_class( IMPORT_OT_lolanm )
+    bpy.utils.register_class( IMPORT_OT_sco )
+    bpy.types.TOPBAR_MT_file_import.append( menu_func_import )
 
-    bpy.utils.register_class(EXPORT_OT_lol)
-    bpy.utils.register_class(EXPORT_OT_skl)
-    bpy.utils.register_class(EXPORT_OT_lolanm)
-    bpy.utils.register_class(EXPORT_OT_sco)
-    bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
-
+    bpy.utils.register_class( EXPORT_OT_lol )
+    bpy.utils.register_class( EXPORT_OT_skl )
+    bpy.utils.register_class( EXPORT_OT_lolanm )
+    bpy.utils.register_class( EXPORT_OT_sco )
+    bpy.types.TOPBAR_MT_file_export.append( menu_func_export )
 
 def unregister():
     # Register Custom Icons
     global custom_icons
-    bpy.utils.previews.remove(custom_icons)
+    bpy.utils.previews.remove( custom_icons )
 
-    bpy.utils.unregister_class(MaterialTextures)
+    bpy.utils.unregister_class( MaterialTextures )
 
-    bpy.utils.unregister_class(IMPORT_OT_lol)
-    bpy.utils.unregister_class(IMPORT_OT_lolanm)
-    bpy.utils.unregister_class(IMPORT_OT_sco)
-    bpy.types.TOPBAR_MT_file_import.remove(menu_func_import)
+    bpy.utils.unregister_class( IMPORT_OT_lol )
+    bpy.utils.unregister_class( IMPORT_OT_lolanm )
+    bpy.utils.unregister_class( IMPORT_OT_sco )
+    bpy.types.TOPBAR_MT_file_import.remove( menu_func_import )
 
-    bpy.utils.unregister_class(EXPORT_OT_lol)
-    bpy.utils.unregister_class(EXPORT_OT_skl)
-    bpy.utils.unregister_class(EXPORT_OT_lolanm)
-    bpy.utils.unregister_class(EXPORT_OT_sco)
-    bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+    bpy.utils.unregister_class( EXPORT_OT_lol )
+    bpy.utils.unregister_class( EXPORT_OT_skl )
+    bpy.utils.unregister_class( EXPORT_OT_lolanm )
+    bpy.utils.unregister_class( EXPORT_OT_sco )
+    bpy.types.TOPBAR_MT_file_export.remove( menu_func_export )
 
 
 def test_anm():
