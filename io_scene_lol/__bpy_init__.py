@@ -359,22 +359,22 @@ def import_char( MODEL_DIR="",
         #   vtx.normal = vertices[id]['normal']
         
     if SKL_FILE:
-        SKL_FILEPATH=path.join(MODEL_DIR, SKL_FILE)
+        SKL_FILEPATH = path.join( MODEL_DIR, SKL_FILE )
         #sklHeader, boneDict = lolSkeleton.importSKL(SKL_FILEPATH)
-        sklHeader, boneList, reorderedBoneList = lolSkeleton.importSKL(SKL_FILEPATH)
-        lolSkeleton.buildSKL(boneList, sklHeader.version)
-        armObj = bpy.data.objects['Armature']
-        armObj.name ='lolArmature'
-        armObj.data.display_type = 'STICK'
-        armObj.data.show_axes = True
-        armObj.show_in_front = True
+        sklHeader, boneList, reorderedBoneList = lolSkeleton.importSKL( SKL_FILEPATH )
+        lolSkeleton.buildSKL( boneList, sklHeader.version )
+        armObj                      = bpy.data.objects['Armature']
+        armObj.name                 ='lolArmature'
+        armObj.data.display_type    = 'STICK'
+        armObj.data.show_axes       = True
+        armObj.show_in_front        = True
 
     if SKN_FILE and SKL_FILE and APPLY_WEIGHTS:
         if reorderedBoneList == []:
-           lolMesh.addDefaultWeights(boneList, vertices, armObj, meshObj)
+           lolMesh.addDefaultWeights( boneList, vertices, armObj, meshObj )
         else:
            print('Using reordered Bone List')
-           lolMesh.addDefaultWeights(reorderedBoneList, vertices, armObj, meshObj)
+           lolMesh.addDefaultWeights( reorderedBoneList, vertices, armObj, meshObj )
         
     if APPLY_TEXTURE and IMPORT_TEXTURES:
         try:  # in case user is already in object mode (ie, SKN and DDS but no SKL)
@@ -490,7 +490,7 @@ def export_char(MODEL_DIR='',
     # bpy.ops.transform.resize(value=(1,1,-1), constraint_axis=(False, False,
     #         True), constraint_orientation='GLOBAL')
 
-def export_skl(MODEL_DIR='', OUTPUT_FILE='untitled.skl', INPUT_FILE=''):
+def export_skl( MODEL_DIR='', OUTPUT_FILE='untitled.skl', INPUT_FILE='' ):
     import bpy
     
     #If no mesh object was supplied, try the active selection

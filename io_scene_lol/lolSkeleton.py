@@ -16,14 +16,16 @@
 # ##### END GPL LICENSE BLOCK #####
 
 # <pep8 compliant>
+from io import BufferedReader
 import struct
 import mathutils
 
 class sklHeader():
-    """LoL skeleton header format:
+    """
+        LoL skeleton header format:
         v1-2
             fileType        char[8]     8       id string
-            version      int            4       possibly number of objects (1-2), 0 is different version
+            version         int         4       possibly number of objects (1-2), 0 is different version
             skeletonHash    int         4       unique id number?
             numBones        int         4       number of bones
 
@@ -35,7 +37,7 @@ class sklHeader():
             zero            short       2       ?
             numBones        short       2       
             numBoneIDs      int         4
-            offsetVertexData    short   2       usually 64
+            offsetVertexData short      2       usually 64
             unknown         short       2       if 0, maybe this and above are one int
 
             offset1         int         4       ?
@@ -45,35 +47,44 @@ class sklHeader():
             offsetToStrings int         4    
             empty                       20
 
-            total size                  64 Bytes          
-    """
+            total size                  64 Bytes
+        """
 
     def __init__(self):
-        self.__format__i = '<8si'
-        self.__format__v12 = '<2i'
-        self.__format__v0 = '<2hi2h5i'
-        self.__size__i = struct.calcsize(self.__format__i)
-        self.__size__v12 = struct.calcsize(self.__format__v12)
-        self.__size__v0 = struct.calcsize(self.__format__v0)
-        self.fileType = None
-        self.version = None
-        self.skeletonHash = None
-        self.numBones = None
+        self.__format__i    = '<8si'
+        self.__format__v12  = '<2i'
+        self.__format__v0   = '<2hi2h5i'
+        self.__size__i      = struct.calcsize( self.__format__i )
+        self.__size__v12    = struct.calcsize( self.__format__v12 )
+        self.__size__v0     = struct.calcsize( self.__format__v0 )
+        self.fileType       = None
+        self.version: int   = None
+        self.skeletonHash   = None
+        self.numBones       = None
 
-    def fromFile(self, sklFile):
-        """Reads the skl header object from the raw binary file"""
-        sklFile.seek(0)
-        beginning = struct.unpack(self.__format__i, sklFile.read(self.__size__i))
-        (fileType, self.version) = beginning
+    def fromFile( self, sklFile: BufferedReader ):
+        """
+            Reads the skl header object from the raw binary file
+            """
+        sklFile.seek( 0 )
+        beginning = struct.unpack( self.__format__i, sklFile.read( self.__size__i ) )
+        ( fileType, self.version ) = beginning
         if self.version in [1, 2]:  # 1 or 2
             rest = struct.unpack(self.__format__v12, sklFile.read(self.__size__v12))
             (self.skeletonHash, self.numBones) = rest
         elif self.version == 0:  # version 0
-            rest = struct.unpack(self.__format__v0, sklFile.read(self.__size__v0))
-            (self.zero, self.numBones, self.numBoneIDs, self.offsetVertexData,
-                    self.unknown, self.offset1, self.offsetAnimationIndices,
-                    self.offset2, self.offset3, self.offsetToStrings) = rest
-            sklFile.seek(self.offsetVertexData)
+            rest = struct.unpack( self.__format__v0, sklFile.read( self.__size__v0 ) )
+            (   self.zero, 
+                self.numBones,
+                self.numBoneIDs,
+                self.mBoneOffset,
+                self.unknown, 
+                self.offset1, 
+                self.offsetAnimationIndices,
+                self.offset2, 
+                self.offset3,
+                self.offsetToStrings ) = rest
+            sklFile.seek( self.mBoneOffset )
         # fields = struct.unpack(self.__format__, sklFile.read(self.__size__))
         # (fileType, self.version, 
         #         self.skeletonHash, self.numBones) = fields
@@ -90,46 +101,47 @@ class sklHeader():
         sklFile.write(data)
 
 class sklBone():
-    """LoL Bone structure format
-    v1-2
-    name        char[32]    32      name of bone
-    parent      int         4       id # of parent bone. Root bone = -1
-    scale       float       4       scale
-    matrix      float[3][4] 48      affine bone matrix
-                                    [x1 x2 x3 xt
-                                     y1 y2 y3 yt
-                                     z1 z2 z3 zt]
-    total                   88
-    
-    v0  (thanks to LolViewer makers)
-    zero        short       2       ?
-    id          short       2       
-    parent      short       2       
-    unknown     short       2       ? combined with above gives int?
-    "namehash"  int         4       
-    twopointone float       4       the value 2.1 as a float. 
-                                    maybe a scaling, 2.1 value for most .skls
-    position    float[3]    12      position of bone
-    scaling?    float[3]    12      possibly scaling in x-y-z. values of 1
-    orientation float[4]    16      quaternion of orientation
-    ct          float[3]    12      "ctx, cty, ctz", probably another position
-                                    ("translation")
-    padding?    byte[32]    32      
-
-    total                   100
     """
+        LoL Bone structure format
+        v1-2
+        name        char[32]    32      name of bone
+        parent      int         4       id # of parent bone. Root bone = -1
+        scale       float       4       scale
+        matrix      float[3][4] 48      affine bone matrix
+                                        [x1 x2 x3 xt
+                                        y1 y2 y3 yt
+                                        z1 z2 z3 zt]
+        total                   88
+        
+        v0  (thanks to LolViewer makers)
+        zero        short       2       ?
+        id          short       2       
+        parent      short       2       
+        unknown     short       2       ? combined with above gives int?
+        "namehash"  int         4       
+        twopointone float       4       the value 2.1 as a float. 
+                                        maybe a scaling, 2.1 value for most .skls
+        position    float[3]    12      position of bone
+        scaling?    float[3]    12      possibly scaling in x-y-z. values of 1
+        orientation float[4]    16      quaternion of orientation
+        ct          float[3]    12      "ctx, cty, ctz", probably another position
+                                        ("translation")
+        padding?    byte[32]    32      
+
+        total                   100
+        """
     def __init__(self):
-        self.__format__v12 = '<32sif12f'
-        self.__size__v12 = struct.calcsize(self.__format__v12)
-        self.__format__v0 = '<4hi22f'
-        self.__size__v0 = struct.calcsize(self.__format__v0)
-        self.name = None
-        self.parent = None
-        self.scale = None
-        self.matrix = [[],[],[]]
+        self.__format__v12  = '<32sif12f'
+        self.__size__v12    = struct.calcsize( self.__format__v12 )
+        self.__format__v0   = '<4hi22f'
+        self.__size__v0     = struct.calcsize( self.__format__v0 )
+        self.name           = None
+        self.parent         = None
+        self.scale          = None
+        self.matrix         = [[],[],[]]
 
 
-    def fromFile(self,sklFile, version):
+    def fromFile( self,sklFile, version ):
         """Reads skeleton bone object from a binary file fid"""
         if version in [1,2]:
             fields = struct.unpack(self.__format__v12, 
@@ -147,18 +159,15 @@ class sklBone():
             for k in range(4):
                 self.matrix[2][k] = -self.matrix[2][k]
         elif version == 0:
-            fields = struct.unpack(self.__format__v0,
-                    sklFile.read(self.__size__v0))
-            self.id = fields[1]
-            self.parent = fields[2]
-            self.name = fields[4]
-            twopointone = fields[5]
-            self.position = list(fields[6:9])
+            fields          = struct.unpack( self.__format__v0, sklFile.read( self.__size__v0 ) )
+            self.id         = fields[1]
+            self.parent     = fields[2]
+            self.name       = fields[4]
+            twopointone     = fields[5]
+            self.position   = list( fields[6:9] )
             self.position[2] *= -1. # make z negative
-            self.scale = fields[9:12]
-            self.quat = mathutils.Quaternion([
-                    - fields[15], fields[12], fields[13],
-                    - fields[14]])
+            self.scale      = fields[9:12]
+            self.quat       = mathutils.Quaternion([-fields[15], fields[12], fields[13], -fields[14]])
             # self.matrix = self.quat.to_matrix()
             # self.matrix2 = [[],[],[],[]]
             # for i in range(0,3):
@@ -166,10 +175,10 @@ class sklBone():
             #             self.matrix[i][2], self.position[0]]
             # self.matrix2[3] = [0, 0, 0, 1]
             # print(self.matrix)
-            self.ct = list(fields[16:19])
+            self.ct         = list( fields[16:19] )
             for i in [1,2]:
                 self.ct[i] *= -1.
-            self.extra = list(fields[19:27])
+            self.extra      = list( fields[19:27] )
             # print("q%s" % self.quat)
             # print("m%s" % self.matrix)
             # print("p%s" % self.position)
@@ -177,7 +186,7 @@ class sklBone():
             # sklFile.seek(sklFile.tell()+32)  # skip 32 padding bytes
 
         else:
-            raise ValueError('unhandled version number', version)
+            raise ValueError( 'unhandled version number', version )
 
     def toFile(self,sklFile):
         """Writes skeleton bone object to a binary file FID"""
@@ -201,17 +210,17 @@ class sklBone():
             pass
         return newBone
 
-def importSKL(filepath):
-    header = sklHeader()
-    boneList= []
-    reorderedBoneList = []
+def importSKL( filepath: str ):
+    header                          = sklHeader()
+    boneList: list[sklBone]         = []
+    reorderedBoneList: list[sklBone] = []
     
     #Wrap open in try block
-    sklFid = open(filepath, 'rb')
-    print("Reading SKL: %s" % filepath)
+    sklFid              = open( filepath, 'rb' )
+    print( "Reading SKL : %s" % filepath )
     #Read the file header to get # of bones
-    header.fromFile(sklFid)
-    print("SKL version:%s" % header.version)
+    header.fromFile( sklFid )
+    print( "SKL version : %s" % header.version )
     if header.version in [1, 2]:
         #Read in the bones
         for k in range(header.numBones):
@@ -234,30 +243,28 @@ def importSKL(filepath):
             
     elif header.version == 0:
         # taken from c# code from LoLViewer
-        for k in range(header.numBones):
-            boneList.append(sklBone())
-            boneList[k].fromFile(sklFid, header.version)
+        for k in range( header.numBones ):
+            boneList.append( sklBone() )
+            boneList[k].fromFile( sklFid, header.version )
         print("(off1) from %s to %s" % (sklFid.tell(), header.offset1))
-        sklFid.seek(header.offset1)
+        sklFid.seek( header.offset1 )
         # indices for version 4 animation
         header.boneIDMap = {}
-        for i in range(0, header.numBones):
+        for i in range( 0, header.numBones ):
             # 8 bytes
-            sklID, anmID = struct.unpack('<2i', sklFid.read(
-                    struct.calcsize('<2i')))
+            sklID, anmID = struct.unpack('<2i', sklFid.read( struct.calcsize('<2i') ) )
             header.boneIDMap[anmID] = sklID
 
 
         print("(offstr) from %s to %s" % (sklFid.tell(), header.offsetToStrings))
-        sklFid.seek(header.offsetToStrings)
-        for i in range(0, header.numBones):
+        sklFid.seek( header.offsetToStrings )
+        for i in range( 0, header.numBones ):
             name = []
-            while name.count(b'\0') == 0:
-                for j in range(0,4):
-                    name.append(sklFid.read(1))
-            end = name.index(b'\0')
-            boneList[i].name = ''.join(
-                    v.decode() for v in name[0:end])
+            while name.count( b'\0' ) == 0:
+                for j in range( 0,4 ):
+                    name.append( sklFid.read(1) )
+            end = name.index( b'\0' )
+            boneList[i].name = ''.join( v.decode() for v in name[0:end] )
             DEBUG_PRINT = False
             if DEBUG_PRINT and boneList[i].name.lower() in ['root', 'r_weapon', 'shield',
                     'l_shield', 'r_shield', 'buffbone_cstm_shield_top',
@@ -279,34 +286,33 @@ def importSKL(filepath):
 
         # below is technically earlier in file than above
         print("(offani) from %s to %s" % (sklFid.tell(), header.offsetAnimationIndices))
-        sklFid.seek(header.offsetAnimationIndices)
-        for i in range(0, header.numBoneIDs):
-            boneId = struct.unpack('<h', sklFid.read(
-                    struct.calcsize('<h')))[0]
-            reorderedBoneList.append(boneList[boneId].copy())
-        print("end: %s" % sklFid.tell())
+        sklFid.seek( header.offsetAnimationIndices )
+        for i in range( 0, header.numBoneIDs ):
+            boneId = struct.unpack( '<h', sklFid.read( struct.calcsize('<h') ) )[0]
+            reorderedBoneList.append( boneList[boneId].copy() )
+        print( "end: %s" % sklFid.tell() )
     else:
         raise ValueError("Version %i not supported" % header.version)
 
     sklFid.close()
     return header, boneList, reorderedBoneList
 
-def buildSKL(boneList, version):
+def buildSKL( boneList: list[sklBone], version: int ):
     import bpy
     import math
     import mathutils
     
-    #Create Blender Armature
-    bpy.ops.object.armature_add(location=(0,0,0), enter_editmode=True, rotation=(math.radians(90), 0, 0))
+    # Create Blender Armature
+    bpy.ops.object.armature_add( location=(0,0,0), enter_editmode=True, rotation=( math.radians(90), 0, 0 ) )
     obj = bpy.context.active_object
     arm = obj.data
 
     bones = arm.edit_bones
     #Remove the default bone
-    bones.remove(bones[0])
+    bones.remove( bones[0] )
     #import the bones
 
-    print(len(boneList))
+    print( "[io_scene_lol] Bone Count : ", len( boneList ) )
     # print("%s, p:%s" % (boneName, boneList[bone.parent].name if bone.parent > -1 else None))
 
     if version in [1,2]:
@@ -345,44 +351,45 @@ def buildSKL(boneList, version):
 
     elif version == 0:
 
-        for boneID, bone in enumerate(boneList):
+        for boneID, bone in enumerate( boneList ):
             #algorithm here based off of above, and LolViewer code
             #If this bone is a child, find the parent's tail and attach this bone's
             #head to it
-            parentPos = mathutils.Vector([0,0,0])
-            boneHead = mathutils.Vector(bone.position)
+            parentPos       = mathutils.Vector([0,0,0])
+            boneHead        = mathutils.Vector(bone.position)
 
-            boneParentID = bone.parent
-            boneName = bone.name.rstrip('\x00')
+            boneParentID    = bone.parent
+            boneName        = bone.name.rstrip('\x00')
             # debug
             # if boneName.count("weapon"):
             #     print("prev: %s" % boneList[boneID-1].name)
             #     print("%s, id:%s\np:%s\nq:%s\ns:%s" % (bone.name, boneID, bone.position, bone.quat, bone.scale))
             #     print("c%s" % bone.ct)
             #     # print("E%s" % bone.extra)
-            newBone = arm.edit_bones.new(boneName)
+            newBone         = arm.edit_bones.new( boneName )
             if boneParentID > -1:
                 boneParentName = boneList[boneParentID].name
-                parentBone = arm.edit_bones[boneParentName]
+                parentBone  = arm.edit_bones[boneParentName]
 
                 newBone.parent = parentBone
-                parQuat = boneList[boneParentID].quat
-                boneHead.rotate(parQuat)  # only apply parent rotation to self
-                bone.quat = parQuat @ bone.quat  # for children
+                parQuat     = boneList[boneParentID].quat
+                boneHead.rotate( parQuat )  # only apply parent rotation to self
+                bone.quat   = parQuat @ bone.quat  # for children
 
                 # parentPos = mathutils.Vector(boneList[boneParentID].position)
-                parentPos = parentBone.head
-            newBone.head = parentPos + boneHead
-            boneMatrix = bone.quat.to_matrix()
-            newBone.tail = newBone.head + mathutils.Vector([boneMatrix[0][1],boneMatrix[1][1],boneMatrix[2][1]])
+                parentPos   = parentBone.head
+                
+            newBone.head    = parentPos + boneHead
+            boneMatrix      = bone.quat.to_matrix()
+            newBone.tail    = newBone.head + mathutils.Vector([boneMatrix[0][1],boneMatrix[1][1],boneMatrix[2][1]])
             
-            newRollVec = mathutils.Vector([boneMatrix[0][0], boneMatrix[1][0], boneMatrix[2][0]])
-            oldRollVec = mathutils.Vector([newBone.matrix[0][0], newBone.matrix[1][0], newBone.matrix[2][0]])
-            normal = mathutils.Vector((boneMatrix[0][1], boneMatrix[1][1], boneMatrix[2][1]))
+            newRollVec      = mathutils.Vector([boneMatrix[0][0], boneMatrix[1][0], boneMatrix[2][0]])
+            oldRollVec      = mathutils.Vector([newBone.matrix[0][0], newBone.matrix[1][0], newBone.matrix[2][0]])
+            normal          = mathutils.Vector((boneMatrix[0][1], boneMatrix[1][1], boneMatrix[2][1]))
             #https://stackoverflow.com/questions/5188561/signed-angle-between-two-3d-vectors-with-same-origin-within-the-same-plane
-            roll = math.atan2(oldRollVec.cross(newRollVec) @ normal, oldRollVec @ newRollVec)
+            roll            = math.atan2(oldRollVec.cross(newRollVec) @ normal, oldRollVec @ newRollVec)
             
-            newBone.roll = roll
+            newBone.roll    = roll
 
         # set bones with children to be average of the
         # for boneID, bone in enumerate(boneList):
@@ -393,12 +400,12 @@ def buildSKL(boneList, version):
         #             pos += arm.edit_bones[b].head/numChildren
         #         arm.edit_bones[bone.name].tail = pos
 
-    bpy.ops.object.mode_set(mode='OBJECT')
-    obj.select_set(True)
-    bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+    bpy.ops.object.mode_set( mode='OBJECT' )
+    obj.select_set( True )
+    bpy.ops.object.transform_apply( location=False, rotation=True, scale=False )
 
 
-def exportSKL(meshObj, skelObj, output_filepath, input_filepath):
+def exportSKL( meshObj, skelObj, output_filepath, input_filepath ):
     import bpy
     
     bpy.ops.object.mode_set(mode='OBJECT')
@@ -428,7 +435,7 @@ def exportSKL(meshObj, skelObj, output_filepath, input_filepath):
             bones[-1].matrix[2][k] = -bones[-1].matrix[2][k]
     
     
-    (import_header, import_boneList, import_reorderedBoneList) = importSKL(input_filepath)
+    ( import_header, import_boneList, import_reorderedBoneList ) = importSKL(input_filepath)
     
     header = import_header
     
@@ -462,3 +469,4 @@ def exportSKL(meshObj, skelObj, output_filepath, input_filepath):
         sklFid.write(struct.pack('<1i', b))
     
     sklFid.close()
+
