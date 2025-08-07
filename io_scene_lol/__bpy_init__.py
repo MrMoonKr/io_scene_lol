@@ -422,17 +422,18 @@ def import_char( MODEL_DIR="",
 
 
 
-def import_animation(MODEL_DIR="", ANM_FILE=""):
-    '''Import an Animation for a LoL character
-    MODEL_DIR:  Base directory of the animation you wish to import.
-    ANM_FILE:  .anm animation file
+def import_animation( MODEL_DIR="", ANM_FILE="" ):
     '''
+        Import an Animation for a LoL character  
+        MODEL_DIR:  Base directory of the animation you wish to import.  
+        ANM_FILE:  .anm animation file  
+        '''
 
     if ANM_FILE:
-        ANM_FILEPATH=path.join(MODEL_DIR, ANM_FILE)
+        ANM_FILEPATH = path.join( MODEL_DIR, ANM_FILE )
 
-    animationHeader, boneList = lolAnimation.importANM(ANM_FILEPATH)
-    lolAnimation.applyANM(animationHeader, boneList)
+    animationHeader, boneList = lolAnimation.importANM( ANM_FILEPATH )
+    lolAnimation.applyANM( animationHeader, boneList )
 
 def export_animation(MODEL_DIR='', OUTPUT_FILE='untitled.anm', INPUT_FILE='', OVERWRITE_FILE_VERSION=False, VERSION=3):
     import bpy

@@ -25,79 +25,96 @@
 # and this file makes use of that work
 
 # <pep8 compliant>
+from io import BufferedReader
 import struct
 import mathutils
+from mathutils import Vector, Quaternion
 
 class anmHeader():
-    """LoL animation header format:
-    id                  char[8]     8       
-    version             uint        4       Version number.
-
-    v1
-        magic               char[12]     12       "magic"
-        numBones            uint        4
-        offset?             uint        4
-        numFrames           uint        4
-        unknown             uint        4       leona_joke_60fps is 10.6333, taunt is 6.9333
-                                                perhaps this is time per frame
-        playbackFPS         float       4
-        2                   float       4
-        10                  float       4
-        2                   float       4
-        10                  float       4
-        0.01                float       4
-        0.2                 float       4
-        more?               ?           ?
-
-    v0,2-3
-        magic               uint        4       "magic" number
-        numBones            uint        4       Number of bones
-        numFrames           uint        4       Number of frames
-        playbackFPS         uint        4       FPS of playback
-
-    v4
-        magic               uint        4       "magic" number
-        unknown             float[3]    12
-        numBones            uint        4       Number of bones
-        numFrames           uint        4       Number of frames
-        timePerFrame        float       4       1/fps
-        offsets             uint[3]     12      offsets
-        positionOffset      uint        4
-        orientationOffset   uint        4
-        indexOffset         uint        4
-        offsets2            uint[3]     12      ?
-
-
-    
-    total size v0,2-3                   28 bytes
-    total size v1                       68+ bytes
-    total size v4                       76 bytes
-
     """
+        LoL animation header format:
+        id                  char[8]     8       
+        version             uint        4       Version number.
+
+        v1
+            magic               char[12]     12       "magic"
+            numBones            uint        4
+            offset?             uint        4
+            numFrames           uint        4
+            unknown             uint        4       leona_joke_60fps is 10.6333, taunt is 6.9333
+                                                    perhaps this is time per frame
+            playbackFPS         float       4
+            2                   float       4
+            10                  float       4
+            2                   float       4
+            10                  float       4
+            0.01                float       4
+            0.2                 float       4
+            more?               ?           ?
+
+        v0,2-3
+            magic               uint        4       "magic" number
+            numBones            uint        4       Number of bones
+            numFrames           uint        4       Number of frames
+            playbackFPS         uint        4       FPS of playback
+
+        v4
+            magic               uint        4       "magic" number
+            unknown             float[3]    12
+            numBones            uint        4       Number of bones
+            numFrames           uint        4       Number of frames
+            timePerFrame        float       4       1/fps
+            offsets             uint[3]     12      offsets
+            positionOffset      uint        4
+            orientationOffset   uint        4
+            indexOffset         uint        4
+            offsets2            uint[3]     12      ?
+        
+        v5
+            dataSize            uint        4       Data Size
+            unknown             uint[3]     12
+            numBones            uint        4
+            numFramea           uint        4
+            timePerFrame        float       4
+            boneHashOffset      uint        4       Bone Name Hashes
+            unknownOffsets      uint[2]     8
+            positionOffset      uint        4
+            rotationOffset      uint        4
+            frameOffset         uint        4
+            unknownOffsets2     uint[3]     12
+            
+
+        total size v0,2-3                   28 bytes
+        total size v1                       68+ bytes
+        total size v4                       76 bytes
+        total size v5                       76 bytes
+        """
 
     def __init__(self):
-        self.__format__i = '<8si'  # initial part
-        self.__size__i = struct.calcsize(self.__format__i)
-        self.__format__v1 = '<12s4i7f'  # part for version 1
-        self.__size__v1 = struct.calcsize(self.__format__v1)
-        self.__format__v023 = '<4i'  # part for version 0-3
-        self.__size__v023 = struct.calcsize(self.__format__v023)
-        self.__format__v4 = '<i3f2if9i'  # part for version 4
-        self.__size__v4 = struct.calcsize(self.__format__v4)
-        self.id = None
-        self.version = None
-        self.magic = None
-        self.numBones = None
-        self.numFrames = None
-        self.playbackFPS = None
+        self.__format__i    = '<8si'        # initial part
+        self.__size__i      = struct.calcsize(self.__format__i)
+        self.__format__v1   = '<12s4i7f'    # part for version 1
+        self.__size__v1     = struct.calcsize(self.__format__v1)
+        self.__format__v023 = '<4i'         # part for version 0-3
+        self.__size__v023   = struct.calcsize(self.__format__v023)
+        self.__format__v4   = '<i3f2if9i'   # part for version 4
+        self.__size__v4     = struct.calcsize(self.__format__v4)
+        self.id             = None
+        self.version        = None
+        self.magic          = None
+        self.numBones       = None
+        self.numFrames      = None
+        self.playbackFPS    = None
 
-    def fromFile(self, anmFile):
-        """Reads the skl header object from the raw binary file"""
-        anmFile.seek(0)
-        beginning = struct.unpack(self.__format__i, anmFile.read(self.__size__i))
-        (self.id, self.version) = beginning
+    def fromFile( self, anmFile: BufferedReader ):
+        """
+            Reads the skl header object from the raw binary file
+            """
+        anmFile.seek( 0 )
+        beginning = struct.unpack( self.__format__i, anmFile.read( self.__size__i ) )
+        ( self.id, self.version ) = beginning
 
-        print("ANM Version: %d" % self.version)
+        print( "ANM Version: %d" % self.version )
         if self.version in [0, 2, 3]:  # versions 0-3
             rest = struct.unpack(self.__format__v023, anmFile.read(self.__size__v023))
             (self.magic, self.numBones, self.numFrames, self.playbackFPS) = rest
@@ -114,65 +131,68 @@ class anmHeader():
                 print("ANM file headers unexpected values: ")
                 print(rest[6:12])
             raise ValueError("Version %s ANM not supported" % self.version)
-        elif self.version == 4:  # version 4
-            rest = struct.unpack(self.__format__v4, anmFile.read(self.__size__v4))
-            self.magic = rest[0]
-            self.unknown = rest[1:4]
-            self.numBones = rest[4]
-            self.numFrames = rest[5]
-            timePerFrame = rest[6]
-            self.playbackFPS = round(1.0 / timePerFrame)
-            self.offsets = rest[7:10]
+        #elif self.version == 4:  # version 4
+        elif self.version in [4, 5]:  # version 4 or version 5
+            rest = struct.unpack( self.__format__v4, anmFile.read( self.__size__v4 ) )
+            self.magic      = rest[0]
+            self.unknown    = rest[1:4]
+            self.numBones   = rest[4]
+            self.numFrames  = rest[5]
+            timePerFrame    = rest[6]
+            self.playbackFPS = round( 1.0 / timePerFrame )
+            self.offsets    = rest[7:10]
             self.positionOffset = rest[10]
             self.orientationOffset = rest[11]
             self.indexOffset = rest[12]
-            self.offsets2 = rest[13:16]
+            self.offsets2   = rest[13:16]
         else:
-            raise ValueError("Version %s ANM not supported" % self.version)
-        print("Version: %s" % self.version)
-        print("magic: %s" % self.magic)
+            raise ValueError( "[io_scene_lol] Version %s ANM not supported" % self.version )
+        print( "[io_scene_lol] Version: %s" % self.version )
+        print( "[io_scene_lol] magic: %s" % self.magic )
     
-    def toFile(self, anmFile):
+    def toFile( self, anmFile ):
         """Writes the header object to a raw binary file"""
-        data = struct.pack(self.__format__i, self.id, self.version)
-        anmFile.write(data)
+        data = struct.pack( self.__format__i, self.id, self.version )
+        anmFile.write( data )
         
         if self.version in [0,2,3]:
-            data = struct.pack(self.__format__v023, self.magic, self.numBones, self.numFrames, self.playbackFPS)
-            anmFile.write(data)
+            data = struct.pack( self.__format__v023, self.magic, self.numBones, self.numFrames, self.playbackFPS )
+            anmFile.write( data )
 
 
 class anmBone():
-    """LoL Bone structure format
-    v0,2-3
-    name        char[32]    32      name of bone (with padding \0's)
-    unknown     int         4       
-
-    frame[numberOfFrames]:
-        orientation     float[4]    16
-        position        float[3]    12
-
-    total                   36 + (28 * Number of Frames)
-
-    v1,4
-    Animation information is separated by frame for version 4 and probably v1
     """
-    def __init__(self):
-        self.__format__i = '<32si'  # initial
-        self.__size__i = struct.calcsize(self.__format__i)
-        self.__format__f = '<7f'  # per frame
-        self.__size__f = struct.calcsize(self.__format__f)
-        self.name = None
-        self.parent = None
-        self.orientations = []
-        self.positions = []
+        LoL Bone structure format
+        v0,2-3
+        name        char[32]    32      name of bone (with padding \0's)
+        unknown     int         4       
 
+        frame[numberOfFrames]:
+            orientation     float[4]    16
+            position        float[3]    12
 
-    def metaDataFromFile(self, anmFile, version):
-        """Reads animation bone meta-data from a binary file fid"""
+        total                   36 + (28 * Number of Frames)
+
+        v1,4
+        Animation information is separated by frame for version 4 and probably v1
+        """
+        
+    def __init__( self ):
+        self.__format__i    = '<32si'  # initial
+        self.__size__i      = struct.calcsize(self.__format__i)
+        self.__format__f    = '<7f'  # per frame
+        self.__size__f      = struct.calcsize(self.__format__f)
+        self.name: str      = None
+        self.parent         = None
+        self.orientations: list[Quaternion] = []
+        self.positions: list[Vector] = []
+
+    def metaDataFromFile( self, anmFile, version ):
+        """
+            Reads animation bone meta-data from a binary file fid
+            """
         if version in [0,2,3]:
-            fields = struct.unpack(self.__format__i, 
-                    anmFile.read(self.__size__i))
+            fields          = struct.unpack( self.__format__i, anmFile.read( self.__size__i ) )
             # for e in ['utf-8', 'utf-16', 'ascii', 'latin-1', 'iso-8859-1',
             #         'gb2312', 'Windows-1251', 'windows-1252']:
             #     try:
@@ -181,41 +201,47 @@ class anmBone():
             #     except UnicodeDecodeError:
             #         print("%s failed" % e)
             #         pass
-            name = bytes.decode(fields[0])
+            name            = bytes.decode( fields[0] )
 
-            self.name = name.rstrip('\0')
-            self.unknown = fields[1]
+            self.name       = name.rstrip('\0')
+            self.unknown    = fields[1]
 
         else:
             raise ValueError("Unhandled Bone version number", version)
 
-    def frameDataFromFile(self, anmFile, version):
-        """Reads animation bone frame data from a binary file fid"""
+    def frameDataFromFile( self, anmFile, version ):
+        """
+            Reads animation bone frame data from a binary file fid
+            """
         if version in [0,2,3]:
-            fields = struct.unpack(self.__format__f,
-                    anmFile.read(self.__size__f))
-            orientation = mathutils.Quaternion([-fields[3], fields[0],
-                    fields[1], -fields[2]])
-            # orientation = mathutils.Quaternion(fields[0:4])
-            position = mathutils.Vector(fields[4:7])
-            position.z *= -1
-            self.add_frame(position, orientation)
+            fields          = struct.unpack( self.__format__f, anmFile.read( self.__size__f ) )
+            orientation     = mathutils.Quaternion( [-fields[3], fields[0], fields[1], -fields[2]] )
+            # orientation     = mathutils.Quaternion( fields[0:4] )
+            position        = mathutils.Vector( fields[4:7] )
+            position.z      *= -1
+            self.add_frame( position, orientation )
         else:
-            raise ValueError("Unhandled Bone version number", version)
+            raise ValueError( "Unhandled Bone version number", version )
 
-    def add_frame(self, position, orientation):
-        """Adds a position Vector and orientation Quaternion to this bone's
-        lists, representing a new frame."""
-        self.positions.append(position)
-        self.orientations.append(orientation)
+    def add_frame( self, position: Vector, orientation: Quaternion ):
+        """
+            Adds a position Vector and orientation Quaternion  
+            to this bone's lists, representing a new frame.  
+            """
+        self.positions.append( position )
+        self.orientations.append( orientation )
 
-    def get_frame(self, frame_number):
-        """Returns the position Vector and orientation Quaternion of a bone
-        in a given frame."""
+    def get_frame( self, frame_number ) -> tuple[Vector,Quaternion]:
+        """
+            Returns the position Vector and orientation Quaternion  
+            of a bone in a given frame.  
+            """
         return self.positions[frame_number], self.orientations[frame_number]
 
-    def toFile(self, anmFile, version):
-        """Writes animation bone object to a binary file FID"""
+    def toFile( self, anmFile, version ):
+        """
+            Writes animation bone object to a binary file FID
+            """
         if version in [0,2,3]:
             data = struct.pack(self.__format__i, self.name.encode(), self.unknown)
             for j in range(0, len(self.orientations)):
@@ -223,38 +249,39 @@ class anmBone():
             anmFile.write(data)
 
 
-def importANM(filepath):
+def importANM( filepath: str ) -> tuple[anmHeader,list[anmBone]]:
     header = anmHeader()
-    boneList= []
+    boneList: list[anmBone] = []
     
     #Wrap open in try block
-    anmFid = open(filepath, 'rb')
+    anmFid = open( filepath, 'rb' )
 
     #Read the file header to get # of bones
-    header.fromFile(anmFid)
+    header.fromFile( anmFid )
     if header.version in [0, 1, 2, 3]:
         #Read in the bones
-        for i in range(header.numBones):
-            boneList.append(anmBone())
-            boneList[i].metaDataFromFile(anmFid, header.version)
+        for i in range( header.numBones ):
+            boneList.append( anmBone() )
+            boneList[i].metaDataFromFile( anmFid, header.version )
             # print("bone %s: %s" % (i, boneList[i].name))
-            for j in range(header.numFrames):
+            for j in range( header.numFrames ):
                 # print(j)
-                boneList[i].frameDataFromFile(anmFid, header.version)
+                boneList[i].frameDataFromFile( anmFid, header.version )
             # print("p:%s\no:%s" % (boneList[i].positions[0],
             #             boneList[i].orientations[0]))
 
-    elif header.version == 4:
-        print("not supported yet")
+    #elif header.version == 4:
+    elif header.version in [4, 5]:
+        print( "not supported yet" )
     else:
-        raise ValueError("ANM File Version not supported.", header.version)
+        raise ValueError( "ANM File Version not supported.", header.version )
 
 
     anmFid.close()
     return header, boneList
 
 
-def applyANM(header, boneList):
+def applyANM( header: anmHeader, boneList: list[anmBone] ):
     import bpy
     import math
 
@@ -262,96 +289,96 @@ def applyANM(header, boneList):
     # http://blender.stackexchange.com/a/31709
 
     ob = bpy.context.object
-    ob.select_set(True)
-    print(dir(ob))
+    ob.select_set( True )
+    print( dir( ob ) )
     ob.animation_data_clear()
     ob.data.pose_position = 'REST'
-    bpy.ops.object.mode_set(mode='POSE')
-    bpy.ops.pose.select_all(action='SELECT')
-    bpy.ops.pose.armature_apply(selected=False)
+    bpy.ops.object.mode_set( mode='POSE' )
+    bpy.ops.pose.select_all( action='SELECT' )
+    bpy.ops.pose.armature_apply( selected=False )
     ob.data.pose_position = 'POSE'
 
     # Rotate the object -90 degrees on the x axis to allign with animation
-    bpy.ops.object.mode_set(mode='OBJECT')
-    ob.select_set(True)
-    bpy.ops.transform.rotate(value=-(math.radians(90)), orient_axis='X', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(True, False, False), mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False)
-    bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+    bpy.ops.object.mode_set( mode='OBJECT' )
+    ob.select_set( True )
+    bpy.ops.transform.rotate( value=-(math.radians(90)), orient_axis='X', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(True, False, False), mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False)
+    bpy.ops.object.transform_apply( location=False, rotation=True, scale=False )
 
 
     try:
-        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.object.mode_set( mode='EDIT' )
     except:
         pass
 
-    scene = bpy.context.scene
-    ob = bpy.context.object
-    editBones = ob.data.edit_bones
-    poseBones = ob.pose.bones
+    scene           = bpy.context.scene
+    ob              = bpy.context.object
+    editBones       = ob.data.edit_bones
+    poseBones       = ob.pose.bones
 
-    parentOffset = {}
-    parentOffRot = {}
+    parentOffset    = {}
+    parentOffRot    = {}
     
     for editBone in editBones:
         if editBone.parent != None:
             # get offset from parent bone in bone's object space
-            parentOffset[editBone.name] = mathutils.Vector(editBone.head - editBone.parent.head) @ editBone.matrix
+            parentOffset[editBone.name] = mathutils.Vector( editBone.head - editBone.parent.head ) @ editBone.matrix
             # get bone rotation relative to the parent bone
-            parentOffRot[editBone.name] = editBone.parent.matrix.to_quaternion().rotation_difference(editBone.matrix.to_quaternion())
+            parentOffRot[editBone.name] = editBone.parent.matrix.to_quaternion().rotation_difference( editBone.matrix.to_quaternion() )
         else:
-            parentOffset[editBone.name] = mathutils.Vector(editBone.head) @ editBone.matrix
-            parentOffRot[editBone.name] = mathutils.Quaternion([1.0, 0.0, 0.0, 0.0]).rotation_difference(editBone.matrix.to_quaternion())
+            parentOffset[editBone.name] = mathutils.Vector( editBone.head ) @ editBone.matrix
+            parentOffRot[editBone.name] = mathutils.Quaternion( [1.0, 0.0, 0.0, 0.0] ).rotation_difference( editBone.matrix.to_quaternion() )
 
     if header.version in [1, 3, 4, 5]:
-        scene.render.fps = header.playbackFPS
-        scene.frame_end = header.numFrames - 1
-        scene.frame_start = 0
-        for f in range(header.numFrames):
-            print("frame %s processing" % f)
-            scene.frame_set(f)
+        scene.render.fps    = header.playbackFPS
+        scene.frame_end     = header.numFrames - 1
+        scene.frame_start   = 0
+        for f in range( header.numFrames ):
+            print( "[io_scene_lol] frame %s processing" % f )
+            scene.frame_set( f )
             
             for b in boneList:
-                n = b.name
-                boneRotation = b.orientations[f]
-                bonePosition = b.positions[f]
+                n               = b.name
+                boneRotation    = b.orientations[f]
+                bonePosition    = b.positions[f]
 
-                poseBone = poseBones[n]
-                editBone = editBones[n]
+                poseBone        = poseBones[n]
+                editBone        = editBones[n]
                 
                 if poseBone.parent:
                     # bonePosition is in parent bone's object space so convert to absolute position
                     bonePosition = bonePosition @ poseBone.parent.matrix.inverted()
                 
                 # convert absolute position to position in bone's object space
-                bonePosition = bonePosition @ editBone.matrix
+                bonePosition    = bonePosition @ editBone.matrix
                 
                 poseBone.rotation_quaternion = parentOffRot[n].inverted() @ boneRotation
                 poseBone.location = bonePosition - parentOffset[n]
 
                 for dp in ["rotation_quaternion", "location"]:
-                    poseBone.keyframe_insert(data_path=dp, frame=f)
+                    poseBone.keyframe_insert( data_path=dp, frame=f )
             # ob.keyframe_insert(data_path="pose")
                 
 
     elif header.version == 4:
-        raise NotImplementedError("version 4 not supported yet")
+        raise NotImplementedError( "[io_scene_lol] version 4 not supported yet" )
     else:
-        raise ValueError("Version not supported", header.version)
+        raise ValueError( "[io_scene_lol] Version not supported", header.version )
     # Once implemented, this code will probably follow a relatively simply
     # structure to bone creation. Althought it will be:
     # go by frame->insert key frame
 
     # Reset the object to 90 degrees on the x axis to allign with animation
-    bpy.ops.object.mode_set(mode='OBJECT')
-    ob.select_set(True)
-    bpy.ops.transform.rotate(value=(math.radians(90)), orient_axis='X', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(True, False, False), mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False)
-    bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+    bpy.ops.object.mode_set( mode='OBJECT' )
+    ob.select_set( True )
+    bpy.ops.transform.rotate( value=(math.radians(90)), orient_axis='X', orient_type='GLOBAL', orient_matrix=((1, 0, 0), (0, 1, 0), (0, 0, 1)), orient_matrix_type='GLOBAL', constraint_axis=(True, False, False), mirror=True, use_proportional_edit=False, proportional_edit_falloff='SMOOTH', proportional_size=1, use_proportional_connected=False, use_proportional_projected=False)
+    bpy.ops.object.transform_apply( location=False, rotation=True, scale=False )
 
 
 
 def exportANM(skelObj, output_filepath, input_filepath, OVERWRITE_FILE_VERSION, VERSION):
     import bpy
     
-    (import_header, import_bonelist) = importANM(input_filepath)
+    ( import_header, import_bonelist ) = importANM( input_filepath )
     
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.select_all(action='DESELECT')
